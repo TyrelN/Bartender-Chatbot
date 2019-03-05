@@ -1,8 +1,7 @@
-from flask import Flask
-from flask import request
+from flask import Flask, render_template, request, jsonify
 from textblob import TextBlob
 import random
-import json
+#import json
 import os
 
 os.environ['NLTK_DATA'] = '~/nltk_data'
@@ -22,8 +21,10 @@ chat_log = {}
 
 def createMessage(input):
     '''Takes json facebook input and creates the message to return to facebook'''
-    input_msg = TextBlob(input['text'])
-    senderId = input['sid']
+    #input_msg = TextBlob(input['text'])
+    input_msg = TextBlob(input)
+    #senderId = input['sid']
+    senderId = 0
     data = buildMessage(input_msg, senderId) 
     #print(chat_log)
     return str(data)  #this will return the wanted message back out to messenger
@@ -235,14 +236,27 @@ def startsWithVowel(word):
 
 #all code above this created API
 app = Flask(__name__) #create the app server to recieve json
+@app.route("/")
+def root():
+    return render_template('chat.html')
 
-@app.route('/givenMessage', methods = ['POST'])
-def postJsonHandler():
-    '''Receives POST request from webhook and returns POST data'''
-    #print (request.is_json)
-    content = request.get_json()
-    #print (content)
-    message = createMessage(content)
-    return message
+@app.route("/chat", methods=['POST','GET'])
+def chat():
+    content = str(request.form['chatmessage'])
+    if content == "quit":
+        exit()
+        return jsonify({"status":"ok", "answer":"exit Thank You"})
+    else:
+        message = createMessage(content)
+        return jsonify({'status':'OK','answer':message})
 
-app.run(host = '0.0.0.0', port = 8090)
+#@app.route('/givenMessage', methods = ['POST'])
+#def postJsonHandler():
+#    '''Receives POST request from webhook and returns POST data'''
+#    #print (request.is_json)
+#    content = request.get_json()
+#    #print (content)
+#    message = createMessage(content)
+#    return message
+
+app.run(host = '127.0.0.1', port = 8090)
