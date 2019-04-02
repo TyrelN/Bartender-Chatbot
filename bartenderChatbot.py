@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from textblob import TextBlob
+from spell import corection
 import random
 #import json
 import os
@@ -22,7 +23,8 @@ chat_log = {}
 def createMessage(input):
     '''Takes json facebook input and creates the message to return to facebook'''
     #input_msg = TextBlob(input['text'])
-    input_msg = TextBlob(input)
+    spell_checked_word = correction(input)
+    input_msg = TextBlob(spell_checked_word)
     #senderId = input['sid']
     senderId = 0
     data = buildMessage(input_msg, senderId) 
