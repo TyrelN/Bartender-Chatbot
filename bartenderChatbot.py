@@ -1,29 +1,55 @@
 from flask import Flask, render_template, request, jsonify
 from textblob import TextBlob
-from spell import corection
+from textblob import Word
+from spell import correction, words, candidates
 import random
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
 #import json
 import os
+#synonym checking implemented
+#sentiment analysis implemented 
+#POS tagging implemented - synergizes with sentiment analysis
 
 os.environ['NLTK_DATA'] = '~/nltk_data'
-GREETING_KEYWORDS = ("hello", "hi", "greetings", "sup", "what's up", "hi there", "good evening", "wuzzup my homie")
-GREETING_RESPONSES = ["What can I get you?", "Hello stranger, what can I serve up for you?", "Need a drink?", "Hi, hope you're thirsty. What can I get you?"]
+GREETING_KEYWORDS = ("yo", "hey", "hello", "hi", "greetings", "sup", "what's up", "hi there", "good evening", "wuzzup my homie")
+GREETING_RESPONSES = ["What can I get you?", "Hello stranger, what can I serve up for you?", "Hey there! Need a drink?", "Hi, hope you're thirsty. What can I get you?", "Welcome! What'll it be today?"]
 GOODBYE_KEYWORDS = ("bye", "good bye", "goodbye", "see ya")
 GOODBYE_RESPONSES = ["Have a good night", "Drive safe!", "Until next time"]
+MEALS = ["steak", "hamburger", "fish and chips", "blt", "spaghetti", "hot dog", ]
 HEDGE_RESPONSES = ["I have no idea what you're asking", "I'm not sure", "Can you re-phrase that?", "Pardon?", "Sorry I can't do that", "I'm confused"]
-DRINKS = ("vodka", "beer", "whiskey", "wine", "sex on the beach", "screwdriver", "green fairy", "whiskey", "absinthe", "acapulco gold", "amaretto", "bacardi", "baileys" "budweiser", "champagne", "daiquiri", "goldschlager" "guinness", "grey goose", "hootch", "jack daniels", "jagermeister", "limoncello", "mezcal", "moonshine", "pina colada", "tequila", "vodka", "zinfandel", "raki", "long island iced tea"  )
+DRINKS = ("vodka", "beer", "whiskey", "wine", "sex on the beach", "screwdriver", "green fairy", "whiskey", "absinthe", "acapulco gold", "amaretto", "bacardi", "baileys" "budweiser", "champagne", "daiquiri", "goldschlager" "guinness", "grey goose", "hootch", "jack daniels", "jagermeister", "limoncello", "mezcal", "moonshine", "martini", "pina colada", "tequila", "vodka", "zinfandel", "raki", "long island iced tea"  )
 DRINKSTYLE = ("on the rocks", "neat")#ask this after they request a drink
-YES_KEYWORDS = ("yes", "yeah", "certainly", "true", "yep", "yea", "okay", "exactly", "gladly")
+YES_KEYWORDS = ("good", "yes", "that's good", "yeah", "certainly", "true", "yep", "yea", "okay", "exactly", "gladly")
 YES_RESPONSES = ["Okay", "Sounds good", "I like it", "Thats great!", "Exciting!"]
 NO_KEYWORDS = ("no", "nah", "negative", "not really", "never", "false", "nope")
 NO_RESPONSES = ["That's too bad", "Suit yourself", "If you say so", "I insist"]
 chat_log = {}
+GRATITUDE = ["thanks", "thank you", "much obliged", "thanks a bunch"]
 
+
+#testing section for determining synonyms
+#synonym tested words are: grub, alcohol, booze, nothing, dandy, goodbye, hello all at [0]
+# testword = Word("milk")
+# bev = testword.synsets[0]
+print(candidates("grub"))
+# print(bev.lemma_names())
 
 def createMessage(input):
     '''Takes json facebook input and creates the message to return to facebook'''
     #input_msg = TextBlob(input['text'])
-    spell_checked_word = correction(input)
+    
+    spellingcheck = str(input).split()
+    counter = 0
+    for x in spellingcheck:
+        
+        if x not in candidates(x) and x not in Word("grub").synsets[0].lemma_names() and x not in Word("booze").synsets[0].lemma_names() and x not in MEALS and x not in DRINKS:
+            spellingcheck[counter] = correction(x)
+            print(spellingcheck[counter])
+        counter += 1
+    spell_checked_word = " ".join(spellingcheck)
+    print(spell_checked_word)
     input_msg = TextBlob(spell_checked_word)
     #senderId = input['sid']
     senderId = 0
@@ -31,11 +57,27 @@ def createMessage(input):
     #print(chat_log)
     return str(data)  #this will return the wanted message back out to messenger
 
+def checkForFeedback(words): #for checking sentiment behind response
+    analysis = TextBlob(str(words))
+    if analysis.sentiment.polarity > 0:
+        return 'positive'
+    elif analysis.sentiment.polarity == 0:
+        return 'neutral'
+    else:
+        return 'negative'
 
 def buildMessage(input_msg, senderId):
     '''Core Logic to build the message.
     If unsure how to reply, will respond with a hedge'''
-
+    tokenform = nltk.word_tokenize(str(input_msg)) #pos tagging form of sentence
+    #initializes switch for feedback
+    
+    
+    if tokenform[0] in GRATITUDE:
+        return "You're welcome!"
+   
+    
+        
     # Clears the user session to start over new
     if input_msg.lower() == 'clear':
         clearSession(senderId)
@@ -48,21 +90,40 @@ def buildMessage(input_msg, senderId):
 
     # If the user is greeting, respond with a greeting
     if CheckForGoodbye(input_msg):
-        # They're leaving, so clear the session
-        clearSession(senderId)
-        return random.choice(GOODBYE_RESPONSES)
+        
+        #the user will give an impression with their farewell which the bartender will respond to
+        #setGoodByeTrue()
+        if checkForFeedback(tokenform) == 'positive':
+            clearSession(senderId)
+            
+            return "Happy to hear that!  " + random.choice(GOODBYE_RESPONSES)
+        elif checkForFeedback(tokenform) == 'negative':
+            clearSession(senderId)
+            
+            return "I'm sorry to hear that. " + random.choice(GOODBYE_RESPONSES)
+        else:
+            clearSession(senderId)
+            
+            return random.choice(GOODBYE_RESPONSES)
+        
+      
 
     # Break the message into parts
     pronoun, noun, adjective, verb = getSpeechParts(input_msg)
     num_drinks = chat_log[senderId]['drinks_served']
 
     # Search for a drink in the user input and respond as well as we can
-    drink = noun
+    drink = noun #pass the noun through spell check 
     if noun not in DRINKS:
         drink = searchForDrink(input_msg)
     if len(input_msg.words) == 1:
         drink = input_msg
     if drink in DRINKS:
+        if tokenform[0] == 'can' or tokenform[0] == 'may': #pos tagging to specify 
+            return "you sure "+ tokenform[0] + "! here's your {0}".format(drink)
+        if num_drinks == 1:
+            
+            return "Here's your {0}. How are you enjoying your drink so far?"
         if num_drinks > 3:
             return "You are too drunk I am unable to serve you any more drinks. You can type 'clear' to tell me that you're sober again"
         #increment drink counter
@@ -81,29 +142,49 @@ def buildMessage(input_msg, senderId):
         return random.choice(NO_RESPONSES)
 
     # If someone doesn't want anything
-    if noun == "nothing":
-        return "There isn't anything I can get for you? I am a master bar tender. You won't find any better."
-
-    #If we have a noun but no drink, we don't know what they want, so we answer with a question
-    if noun:
-        resp = []
-        if pronoun:
-            print("pron" + pronoun)
-            resp.append(pronoun)
-        if verb:
-            v = verb[0]
-            if v is not None:
-                resp.append(v)
-        if startsWithVowel(noun):
-            noun_pronoun = "an"
+    if noun == Word("nothing").synsets[0].lemma_names():
+        return "There isn't anything I can get for you? I have a vast knowledge of drinks. I'm sure you'll like something we have in stock."
+    # If the noun is a meal: 
+    meal = noun
+    if noun not in MEALS:
+        meal = searchForMeal(input_msg)
+    if len(input_msg.words) == 1:
+        meal = input_msg
+    if meal in MEALS:
+        if tokenform[0] == 'can' or tokenform[0] == 'may': #pos tagging to specify 
+            return "you sure "+ tokenform[0] + "! here's your {0}".format(meal)
+        if num_drinks == 1:
+            
+            return "Here's your {0}. How are you enjoying your food so far?".format(meal)
         else:
-            noun_pronoun = "a"
-        resp.append(noun_pronoun + " " + noun + "?")
-        print(resp)
-        return " ".join(resp)
+            return "Alright, here's your {0}, bon appetite".format(meal)
+    #If we have a noun but no drink, we don't know what they want, so we answer with a question
+    for x in tokenform: 
+        print(str(x))
+        if str(x) in Word("grub").synsets[0].lemma_names():
+            return "Sounds good. What would you like to eat?"
+    for x in tokenform:
+        print(str(x))
+        if str(x) == "drink" or x in Word("booze").synsets[0].lemma_names():
+            return "One drink coming up. What's your fancy?"
+    if noun:
+        if checkForFeedback(tokenform) == 'positive':
+            return "Happy to hear that!  "
+        elif checkForFeedback(tokenform) == 'negative':
+            return "Oh that's no good. I'm sure we can fix that"
+        else:
+            return "well, can't say I understood that, I'll assume it was positive!" 
     #If nothing caught, return a hedge
     return random.choice(HEDGE_RESPONSES)
-
+#process if the passed sentence is positive negative or neutral
+# def get_sentiment(processed_sentence):
+#     analysis = TextBlob(processed_sentence)
+#     if analysis.sentiment.polarity > 0:
+#         return 'positive'
+#     elif analysis.sentiment.polarity == 0:
+#         return 'neutral'
+#     else:
+#         return 'negative'
 
 def createChatLog(senderId):
     '''Keeps track of each session ID in a dictionary'''
@@ -132,7 +213,7 @@ def clearSession(senderId):
 def CheckForGreeting(sentence):
     '''Return boolean if the user sentence contains a greeting'''
     for word in sentence.words:
-        if word.lower() in GREETING_KEYWORDS:
+        if word.lower() in GREETING_KEYWORDS or word.lower() in Word("hello").synsets[0].lemma_names():
             return True
     return False
 
@@ -140,7 +221,7 @@ def CheckForGreeting(sentence):
 def CheckForGoodbye(sentence):
     '''Return boolean if the user wants to leave/end the sesion'''
     for word in sentence.words:
-        if word.lower() in GOODBYE_KEYWORDS:
+        if word.lower() in GOODBYE_KEYWORDS or word.lower() in Word("goodbye").synsets[0].lemma_names():
             return True
     return False
 
@@ -148,7 +229,7 @@ def CheckForGoodbye(sentence):
 def checkForYes(sentence):
     '''Return boolean if the user indicated a yes/true reply'''
     for word in sentence.words:
-        if word.lower() in YES_KEYWORDS:
+        if word.lower() in YES_KEYWORDS or word.lower() in Word("yes").synsets[0].lemma_names():
             return True
     return False
 
@@ -156,7 +237,7 @@ def checkForYes(sentence):
 def checkForNo(sentence):
     '''Return boolean if the user indicated a no/false reply'''
     for word in sentence.words:
-        if word.lower() in NO_KEYWORDS:
+        if word.lower() in NO_KEYWORDS or word.lower() in Word("no").synsets[0].lemma_names():
             return True
     return False
 
@@ -164,7 +245,14 @@ def checkForNo(sentence):
 def searchForDrink(sentence):
     '''Return boolean if the user sentence contains a drink'''
     for word in sentence.words:
-        if word.lower() in DRINKS:
+        if word.lower() in DRINKS: #or word.lower in Word(word).synsets[0].lemma_names():
+            return word
+    return None
+
+def searchForMeal(sentence):
+    '''Return boolean if the user sentence contains a drink'''
+    for word in sentence.words:
+        if word.lower() in MEALS: # or word.lower in Word(word).synsets[0].lemma_names():
             return word
     return None
 
