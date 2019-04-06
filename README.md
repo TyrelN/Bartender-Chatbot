@@ -65,4 +65,10 @@ Run the py file and access the url in a browser:
  * Running on http://127.0.0.1:8090/ (Press CTRL+C to quuit)  
  '''
  ## Features 
- A simple spell check
+ *A simple spell checker that registers words that are one or two letters off. 
+ *A synonym checker for utilizing words that are mean the same thing as others, such as registering chow and grub as the same word for the bartender's understanding. This feature is built with the WordNet library
+ *A pos tagger for tokenization of sentences. This was built with the NLTK library. It allowed the bartender to register if the user asked may or can I for a request and responded acknowledging those specific words. the tagger also synergized with the next feature.
+ *Sentiment Analysis. Built using the NLTK library. Using the tokens of the sentences processed, the bartender utilizes the sentiment.polarity function to tell if a given set of words is wholly positive negative or neutral, to try and emulate understanding of sentiment.
+
+ *These features above plus the food and drink differentiation for a restaurant style api would make suitable features that could be extracted from the design to be shared with others
+
