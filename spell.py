@@ -1,6 +1,6 @@
 import re
 from collections import Counter
-
+#code referenced: https://norvig.com/spell-correct.html
 def words(text): return re.findall(r'\w+', text.lower())
 
 WORDS = Counter(words(open('big.txt').read()))

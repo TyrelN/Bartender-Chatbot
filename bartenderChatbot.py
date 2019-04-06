@@ -11,6 +11,10 @@ import os
 #synonym checking implemented
 #sentiment analysis implemented 
 #POS tagging implemented - synergizes with sentiment analysis
+#REFERENCES: https://stevenloria.com/wordnet-tutorial/
+#https://medium.com/@gianpaul.r/tokenization-and-parts-of-speech-pos-tagging-in-pythons-nltk-library-2d30f70af13b
+#https://www.geeksforgeeks.org/part-speech-tagging-stop-words-using-nltk-python/
+#https://www.geeksforgeeks.org/twitter-sentiment-analysis-using-python/
 
 os.environ['NLTK_DATA'] = '~/nltk_data'
 GREETING_KEYWORDS = ("yo", "hey", "hello", "hi", "greetings", "sup", "what's up", "hi there", "good evening", "wuzzup my homie")

@@ -64,4 +64,5 @@ Run the py file and access the url in a browser:
  * Debug mode: off                                      it)
  * Running on http://127.0.0.1:8090/ (Press CTRL+C to quuit)  
  '''
- ##Features 
+ ## Features 
+ A simple spell check
