@@ -1,6 +1,6 @@
 .text-white-50 { color: rgba(255, 255, 255, .5); }
 
-.bg-purple { background: linear-gradient(to top right, #ff5263 0%, #ff7381 45%, #fcbd01 100%); }
+.bg-purple { background: linear-gradient(to top right, #cf2233 0%, #ac3150 45%, #d35812 100%); }
 
 .lh-100 { line-height: 1; }
 .lh-125 { line-height: 1.25; }
