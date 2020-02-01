@@ -55,10 +55,10 @@ def createMessage(input):
     spell_checked_word = " ".join(spellingcheck)
     print(spell_checked_word)
     input_msg = TextBlob(spell_checked_word)
-    #senderId = input['sid']
+   
     senderId = 0
     data = buildMessage(input_msg, senderId) 
-    #print(chat_log)
+   
     return str(data)  #this will return the wanted message back out to messenger
 
 def checkForFeedback(words): #for checking sentiment behind response
@@ -180,15 +180,7 @@ def buildMessage(input_msg, senderId):
             return "well, can't say I understood that, I'll assume it was positive!" 
     #If nothing caught, return a hedge
     return random.choice(HEDGE_RESPONSES)
-#process if the passed sentence is positive negative or neutral
-# def get_sentiment(processed_sentence):
-#     analysis = TextBlob(processed_sentence)
-#     if analysis.sentiment.polarity > 0:
-#         return 'positive'
-#     elif analysis.sentiment.polarity == 0:
-#         return 'neutral'
-#     else:
-#         return 'negative'
+
 
 def createChatLog(senderId):
     '''Keeps track of each session ID in a dictionary'''
@@ -344,13 +336,6 @@ def chat():
         message = createMessage(content)
         return jsonify({'status':'OK','answer':message})
 
-#@app.route('/givenMessage', methods = ['POST'])
-#def postJsonHandler():
-#    '''Receives POST request from webhook and returns POST data'''
-#    #print (request.is_json)
-#    content = request.get_json()
-#    #print (content)
-#    message = createMessage(content)
-#    return message
+
 
 app.run(host = '127.0.0.1', port = 8090)
